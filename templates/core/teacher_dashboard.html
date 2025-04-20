@@ -1,0 +1,20 @@
+<h2>Teacher Dashboard</h2>
+<p>Welcome {{ profile.user.username }}</p>
+<p>Your Room: {{ profile.room|default:"Not allocated yet" }}</p>
+
+{% if latest_request %}
+  <p><strong>Last Request Status:</strong> {{ latest_request.status|capfirst }}</p>
+  <p><strong>Room:</strong> {{ latest_request.room|default:"Not assigned yet" }}</p>
+{% endif %}
+
+{% if allow_request %}
+  <h3>Submit Room Request</h3>
+  <form method="post">
+      {% csrf_token %}
+      {{ form.non_field_errors }}
+      {{ form.as_p }}
+      <button type="submit">Request Room</button>
+  </form>
+{% else %}
+  <p style="color: grey;"><em>You cannot submit a new request until the current one is resolved.</em></p>
+{% endif %}

@@ -1,0 +1,12 @@
+{% extends "admin/base_site.html" %}
+{% block content %}
+<h2>Allocate Room for Request</h2>
+<p>Request by: {{ room_request.student or room_request.teacher }}</p>
+
+<form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit" class="default">Allocate</button>
+</form>
+<a href="..">Back</a>
+{% endblock %}
