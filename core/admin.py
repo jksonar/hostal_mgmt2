@@ -1,10 +1,10 @@
 from django.contrib import admin
-from .models import Room, Student, Teacher
+from .models import Room, StudentProfile, TeacherProfile
 from .models import RoomRequest
 from django.urls import path
 from django.contrib import admin
 from django.shortcuts import render, redirect, get_object_or_404
-from .models import RoomRequest, Room, Student, Teacher
+from .models import RoomRequest, Room
 from django import forms
 
 # @admin.register(RoomRequest)
@@ -13,9 +13,8 @@ from django import forms
 #     list_filter = ('status',)
 
 admin.site.register(Room)
-admin.site.register(Student)
-admin.site.register(Teacher)
-
+admin.site.register(StudentProfile)
+admin.site.register(TeacherProfile)
 
 class RoomAllocationForm(forms.Form):
     room = forms.ModelChoiceField(queryset=Room.objects.all())

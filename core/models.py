@@ -9,22 +9,6 @@ class Room(models.Model):
     def __str__(self):
         return f"Room {self.number}"
 
-class Student(models.Model):
-    name = models.CharField(max_length=100)
-    roll_number = models.CharField(max_length=20, unique=True)
-    room = models.ForeignKey(Room, on_delete=models.SET_NULL, null=True, blank=True)
-
-    def __str__(self):
-        return self.name
-
-class Teacher(models.Model):
-    name = models.CharField(max_length=100)
-    employee_id = models.CharField(max_length=20, unique=True)
-    room = models.ForeignKey(Room, on_delete=models.SET_NULL, null=True, blank=True)
-
-    def __str__(self):
-        return self.name
-
 class RoomRequest(models.Model):
     STATUS_CHOICES = [
         ('pending', 'Pending'),
