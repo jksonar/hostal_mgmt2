@@ -1,12 +1,9 @@
-from .forms import RoomRequestForm
-from .models import RoomRequest
+from .forms import UserRegisterForm, RoomRequestForm
+from .models import StudentProfile, TeacherProfile, RoomRequest
+from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import render, redirect
-from .forms import RoomRequestForm
 from django.contrib.auth import authenticate, login
-from django.shortcuts import render, redirect
 from django.contrib.auth.forms import AuthenticationForm
-from django.shortcuts import render
 
 # Create your views here.
 from django.http import HttpResponse
@@ -35,11 +32,11 @@ def user_login(request):
                 return redirect('student_dashboard')
             elif hasattr(user, 'teacherprofile'):
                 return redirect('teacher_dashboard')
+            else:
+                return redirect('home')  # Fallback redirect
     else:
         form = AuthenticationForm()
     return render(request, 'core/login.html', {'form': form})
-
-
 
 @login_required
 def student_dashboard(request):
@@ -103,4 +100,21 @@ def teacher_dashboard(request):
         'allow_request': allow_request
     })
 
+def register(request):
+    if request.method == 'POST':
+        form = UserRegisterForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            is_student = form.cleaned_data.get('is_student')
+            is_teacher = form.cleaned_data.get('is_teacher')
 
+            if is_student:
+                StudentProfile.objects.create(user=user, roll_number=form.cleaned_data.get('roll_number'))
+            if is_teacher:
+                TeacherProfile.objects.create(user=user)
+
+            messages.success(request, 'Account created successfully.')
+            return redirect('login')  # 🔁 avoid resubmission on reload
+    else:
+        form = UserRegisterForm()
+    return render(request, 'core/register.html', {'form': form})

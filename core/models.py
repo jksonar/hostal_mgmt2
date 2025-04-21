@@ -32,8 +32,8 @@ class RoomRequest(models.Model):
         ('rejected', 'Rejected'),
     ]
 
-    student = models.ForeignKey('Student', on_delete=models.CASCADE, null=True, blank=True)
-    teacher = models.ForeignKey('Teacher', on_delete=models.CASCADE, null=True, blank=True)
+    student = models.ForeignKey('StudentProfile', on_delete=models.CASCADE, null=True, blank=True)
+    teacher = models.ForeignKey('TeacherProfile', on_delete=models.CASCADE, null=True, blank=True)
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
     room = models.ForeignKey('Room', on_delete=models.SET_NULL, null=True, blank=True)
     requested_at = models.DateTimeField(auto_now_add=True)
