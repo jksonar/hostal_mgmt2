@@ -1,3 +1,7 @@
+{% extends "base.html" %}
+
+{% block content %}
+
 <h2>Teacher Dashboard</h2>
 <p>Welcome {{ profile.user.username }}</p>
 <p>Your Room: {{ profile.room|default:"Not allocated yet" }}</p>
@@ -18,3 +22,5 @@
 {% else %}
   <p style="color: grey;"><em>You cannot submit a new request until the current one is resolved.</em></p>
 {% endif %}
+
+{% endblock %}

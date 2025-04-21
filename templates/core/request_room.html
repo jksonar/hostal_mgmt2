@@ -1,6 +1,12 @@
+{% extends "base.html" %}
+
+{% block content %}
+
 <h2>Room Request</h2>
 <form method="post">
     {% csrf_token %}
     {{ form.as_p }}
     <button type="submit">Submit Request</button>
 </form>
+
+{% endblock %}

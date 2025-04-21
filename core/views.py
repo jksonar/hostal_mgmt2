@@ -2,14 +2,15 @@ from .forms import UserRegisterForm, RoomRequestForm
 from .models import StudentProfile, TeacherProfile, RoomRequest
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth import authenticate, login
+from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.forms import AuthenticationForm
+from django.contrib import messages
 
 # Create your views here.
-from django.http import HttpResponse
+# from django.http import HttpResponse
 
 def home(request):
-    return HttpResponse("Welcome to Hostel Management System")
+    return render(request,'base.html')
 
 def request_room(request):
     if request.method == 'POST':
@@ -72,7 +73,7 @@ def student_dashboard(request):
 @login_required
 def teacher_dashboard(request):
     profile = request.user.teacherprofile
-    latest_request = RoomRequest.objects.filter(student=profile).order_by('-requested_at').first()
+    latest_request = RoomRequest.objects.select_related('student').order_by('-requested_at').first()
 
     allow_request = (
         not latest_request or
@@ -115,6 +116,24 @@ def register(request):
 
             messages.success(request, 'Account created successfully.')
             return redirect('login')  # 🔁 avoid resubmission on reload
+    else:
+        form = UserRegisterForm()
+    return render(request, 'core/register.html', {'form': form})
+
+def user_logout(request):
+    logout(request)
+    return redirect('login')
+
+def register(request):
+    if request.method == 'POST':
+        form = UserRegisterForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            StudentProfile.objects.create(
+                user=user,
+                roll_number=form.cleaned_data['roll_number']
+            )
+            # Proceed with login or redirect
     else:
         form = UserRegisterForm()
     return render(request, 'core/register.html', {'form': form})

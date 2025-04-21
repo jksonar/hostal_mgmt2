@@ -1,27 +1,21 @@
 from django import forms
 from .models import RoomRequest
-from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm
+from .models import StudentProfile, TeacherProfile
+from django.core.exceptions import ValidationError
 
 class RoomRequestForm(forms.ModelForm):
     class Meta:
         model = RoomRequest
-        # fields = ['student', 'teacher']  # One of them will be filled based on user type
-        fields = []  # We will set student/teacher in the view
+        fields = ['student', 'teacher']  # One of them will be filled based on user type
 
 # forms.py
 class UserRegisterForm(UserCreationForm):
-    is_student = forms.BooleanField(required=False)
-    is_teacher = forms.BooleanField(required=False)
-    roll_number = forms.CharField(required=False)
-
-    class Meta:
-        model = User
-        fields = ['username', 'email', 'password1', 'password2', 'is_student', 'is_teacher', 'roll_number']
+    roll_number = forms.CharField(max_length=20)
 
     def clean_roll_number(self):
-        roll = self.cleaned_data.get('roll_number')
-        if roll and StudentProfile.objects.filter(roll_number=roll).exists():
-            raise forms.ValidationError("A student with this roll number already exists.")
-        return roll
+        roll_number = self.cleaned_data['roll_number']
+        if StudentProfile.objects.filter(roll_number=roll_number).exists():
+            raise ValidationError("This roll number is already in use.")
+        return roll_number
