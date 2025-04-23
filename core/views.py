@@ -12,6 +12,7 @@ from django.contrib import messages
 def home(request):
     return render(request,'base.html')
 
+@login_required
 def request_room(request):
     if request.method == 'POST':
         form = RoomRequestForm(request.POST)
