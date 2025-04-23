@@ -15,38 +15,50 @@
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
-                    {% comment %} {% if user.is_authenticated %} {% endcomment %}
+                    {% if user.is_authenticated %}
                         <li class="nav-item"><a class="nav-link" href="{% url 'request_room' %}">room request</a></li>
-                        <li class="nav-item"><a class="nav-link" href="{% url 'login' %}">login</a></li>
                         <li class="nav-item"><a class="nav-link" href="{% url 'student_dashboard' %}">student dashboard</a></li>
-                        {% comment %} {% if user.is_staff %} {% endcomment %}
+                        {% if user.is_staff %} 
                             <li class="nav-item"><a class="nav-link" href="{% url 'teacher_dashboard' %}">teacher_dashboard</a></li>
-                        {% comment %} {% endif %} {% endcomment %}
-                        <form method="post" action="{% url 'logout' %}" style="display:inline;"> 
-                        {% csrf_token %} 
-                        <li class="nav-item"><button type="submit" class="nav-link btn btn-link">Logout</button></li>
-                        </form>
-                    {% comment %} {% else %} {% endcomment %}
+                        {% endif %}
+                    {% else %} 
                         <li class="nav-item"><a class="nav-link" href="{% url 'login' %}">Login</a></li>
                         <li class="nav-item"><a class="nav-link" href="{% url 'register' %}">Register</a></li>
-                    {% comment %} {% endif %} {% endcomment %}
+                    {% endif %}
                 </ul>
-                {% comment %} {% if user.is_authenticated %} {% endcomment %}
-                    <span class="navbar-text text-light">Welcome, {{ user.username }}</span>
-                {% comment %} {% endif %} {% endcomment %}
+                {% if user.is_authenticated %}
+                <div class="dropdown">
+                <a class="nav-link dropdown-toggle text-light" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                    Welcome, {{ user.username }}
+                </a>
+                <ul class="dropdown-menu dropdown-menu-end">
+                    <li><a class="dropdown-item" href="{% url 'student_dashboard' %}">Student Dashboard</a></li>
+                    {% if user.is_staff %}
+                    <li><a class="dropdown-item" href="{% url 'teacher_dashboard' %}">Teacher Dashboard</a></li>
+                    {% endif %}
+                    <li><hr class="dropdown-divider"></li>
+                    <li>
+                    <form method="post" action="{% url 'logout' %}" style="margin: 0;">
+                        {% csrf_token %}
+                        <button type="submit" class="dropdown-item">Logout</button>
+                    </form>
+                    </li>
+                </ul>
+                </div>
+                {% endif %}
             </div>
         </div>
     </nav>
-    {% comment %} {% if messages %} {% endcomment %}
+    {% if messages %}
     <div class="container mt-3">
-        {% comment %} {% for message in messages %}
+        {% for message in messages %}
             <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
                 {{ message }}
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
-        {% endfor %} {% endcomment %}
+        {% endfor %}
     </div>
-    {% comment %} {% endif %} {% endcomment %}
+    {% endif %}
     <div class="container">
         {% block content %}
         {% endblock %}
