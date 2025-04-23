@@ -29,7 +29,10 @@
                 {% if user.is_authenticated %}
                 <div class="dropdown">
                 <a class="nav-link dropdown-toggle text-light" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                    Welcome, {{ user.username }}
+                    {{ user.username }}
+                    {% if profile_picture %}
+                    <img src="{{ profile_picture.url }}" alt="Profile Picture" class="rounded-circle" style="width:40px; height:40px; object-fit:cover;">
+                    {% endif %}
                 </a>
                 <ul class="dropdown-menu dropdown-menu-end">
                     <li><a class="dropdown-item" href="{% url 'student_dashboard' %}">Student Dashboard</a></li>
