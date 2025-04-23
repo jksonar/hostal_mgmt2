@@ -8,7 +8,7 @@ from django.core.exceptions import ValidationError
 class RoomRequestForm(forms.ModelForm):
     class Meta:
         model = RoomRequest
-        fields = ['student', 'teacher']  # One of them will be filled based on user type
+        exclude = ['student', 'teacher', 'status', 'requested_at']
 
 # forms.py
 class UserRegisterForm(UserCreationForm):

@@ -29,6 +29,24 @@ class RoomRequest(models.Model):
     def __str__(self):
         return f"Request by {self.student or self.teacher} - {self.status}"
 
+    def save(self, *args, **kwargs):
+        # Get original status before saving
+        old_status = None
+        if self.pk:
+            old_instance = RoomRequest.objects.get(pk=self.pk)
+            old_status = old_instance.status
+
+        super().save(*args, **kwargs)
+
+        # If status changed to approved, update profile
+        if self.status == 'approved' and old_status != 'approved':
+            if self.student:
+                self.student.room = self.room
+                self.student.save()
+            elif self.teacher:
+                self.teacher.room = self.room
+                self.teacher.save()
+
 class StudentProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     roll_number = models.CharField(max_length=20, unique=True)
@@ -46,3 +64,12 @@ class TeacherProfile(models.Model):
 
     def __str__(self):
         return self.user.username
+
+# Need to check what is property method
+# @property
+# def requested_by_username(self):
+#     if self.student:
+#         return self.student.user.username
+#     elif self.teacher:
+#         return self.teacher.user.username
+#     return "Unknown"

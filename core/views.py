@@ -5,6 +5,9 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib import messages
+from django.shortcuts import render, redirect, get_object_or_404
+from .models import RoomRequest
+from django.contrib.auth.decorators import user_passes_test
 
 # Create your views here.
 # from django.http import HttpResponse
@@ -14,13 +17,31 @@ def home(request):
 
 @login_required
 def request_room(request):
+    user = request.user
+    profile = None
+    is_student = False
+    is_teacher = False
+
+    if hasattr(user, 'studentprofile'):
+        profile = user.studentprofile
+        is_student = True
+    elif hasattr(user, 'teacherprofile'):
+        profile = user.teacherprofile
+        is_teacher = True
+
     if request.method == 'POST':
         form = RoomRequestForm(request.POST)
         if form.is_valid():
-            form.save()
+            room_request = form.save(commit=False)
+            if is_student:
+                room_request.student = profile
+            elif is_teacher:
+                room_request.teacher = profile
+            room_request.save()
             return redirect('home')
     else:
         form = RoomRequestForm()
+
     return render(request, 'core/request_room.html', {'form': form})
 
 def user_login(request):
@@ -138,3 +159,31 @@ def register(request):
     else:
         form = UserRegisterForm()
     return render(request, 'core/register.html', {'form': form})
+
+def is_admin(user):
+    return user.is_staff
+
+@user_passes_test(is_admin)
+def admin_dashboard(request):
+    requests = RoomRequest.objects.select_related('student__user', 'teacher__user', 'room').order_by('-requested_at')
+    return render(request, 'admin/dashboard.html', {'requests': requests})
+
+@user_passes_test(is_admin)
+def approve_request(request, pk):
+    room_request = get_object_or_404(RoomRequest, pk=pk)
+    room_request.status = 'approved'
+    room_request.save()
+    return redirect('admin_dashboard')
+
+@user_passes_test(is_admin)
+def reject_request(request, pk):
+    room_request = get_object_or_404(RoomRequest, pk=pk)
+    room_request.status = 'rejected'
+    room_request.save()
+    return redirect('admin_dashboard')
+
+@user_passes_test(is_admin)
+def delete_request(request, pk):
+    room_request = get_object_or_404(RoomRequest, pk=pk)
+    room_request.delete()
+    return redirect('admin_dashboard')

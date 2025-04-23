@@ -10,62 +10,77 @@
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
         <div class="container-fluid">
             <a class="navbar-brand" href="{% url 'home' %}">Library</a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
+
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
                     {% if user.is_authenticated %}
-                        <li class="nav-item"><a class="nav-link" href="{% url 'request_room' %}">room request</a></li>
-                        <li class="nav-item"><a class="nav-link" href="{% url 'student_dashboard' %}">student dashboard</a></li>
-                        {% if user.is_staff %} 
-                            <li class="nav-item"><a class="nav-link" href="{% url 'teacher_dashboard' %}">teacher_dashboard</a></li>
+                        <li class="nav-item"><a class="nav-link" href="{% url 'request_room' %}">Room Request</a></li>
+                        {% if user.studentprofile %}
+                        <li class="nav-item"><a class="nav-link" href="{% url 'student_dashboard' %}">Student Dashboard</a></li>
                         {% endif %}
-                    {% else %} 
+                        {% if user.teacherprofile %}
+                        <li class="nav-item"><a class="nav-link" href="{% url 'teacher_dashboard' %}">Teacher Dashboard</a></li>
+                        {% endif %}
+                        {% if user.is_superuser %}
+                        <li class="nav-item"><a class="nav-link" href="{% url 'admin_dashboard' %}">Admin Dashboard</a></li>
+                        {% endif %}
+                    {% else %}
                         <li class="nav-item"><a class="nav-link" href="{% url 'login' %}">Login</a></li>
                         <li class="nav-item"><a class="nav-link" href="{% url 'register' %}">Register</a></li>
                     {% endif %}
                 </ul>
+
                 {% if user.is_authenticated %}
                 <div class="dropdown">
-                <a class="nav-link dropdown-toggle text-light" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                    {{ user.username }}
-                    {% if profile_picture %}
-                    <img src="{{ profile_picture.url }}" alt="Profile Picture" class="rounded-circle" style="width:40px; height:40px; object-fit:cover;">
-                    {% endif %}
-                </a>
-                <ul class="dropdown-menu dropdown-menu-end">
-                    <li><a class="dropdown-item" href="{% url 'student_dashboard' %}">Student Dashboard</a></li>
-                    {% if user.is_staff %}
-                    <li><a class="dropdown-item" href="{% url 'teacher_dashboard' %}">Teacher Dashboard</a></li>
-                    {% endif %}
-                    <li><hr class="dropdown-divider"></li>
-                    <li>
-                    <form method="post" action="{% url 'logout' %}" style="margin: 0;">
-                        {% csrf_token %}
-                        <button type="submit" class="dropdown-item">Logout</button>
-                    </form>
-                    </li>
-                </ul>
+                    <a class="nav-link dropdown-toggle text-light d-flex align-items-center gap-2" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        {{ user.username }}
+                        {% if profile_picture %}
+                        <img src="{{ profile_picture.url }}" alt="Profile" class="rounded-circle" style="width:40px; height:40px; object-fit:cover;">
+                        {% endif %}
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        {% if user.studentprofile %}
+                        <li><a class="dropdown-item" href="{% url 'student_dashboard' %}">Student Dashboard</a></li>
+                        {% endif %}
+                        {% if user.teacherprofile %}
+                        <li><a class="dropdown-item" href="{% url 'teacher_dashboard' %}">Teacher Dashboard</a></li>
+                        {% endif %}
+                        {% if user.is_superuser %}
+                        <li><a class="dropdown-item" href="{% url 'admin_dashboard' %}">Admin Dashboard</a></li>
+                        {% endif %}
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <form method="post" action="{% url 'logout' %}" class="px-3 py-1">
+                                {% csrf_token %}
+                                <button type="submit" class="dropdown-item">Logout</button>
+                            </form>
+                        </li>
+                    </ul>
                 </div>
                 {% endif %}
             </div>
         </div>
     </nav>
+
     {% if messages %}
     <div class="container mt-3">
         {% for message in messages %}
-            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
         {% endfor %}
     </div>
     {% endif %}
+
     <div class="container">
         {% block content %}
         {% endblock %}
     </div>
+
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
