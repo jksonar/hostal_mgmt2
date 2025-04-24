@@ -1,75 +1,39 @@
-from django.contrib.auth.models import User
 from django.db import models
+from django.contrib.auth.models import User
 
-def user_profile_picture_path(instance, filename):
-    # upload path will be: media/profile_pictures/user_<id>/<filename>
-    return f'profile_pictures/user_{instance.user.id}/{filename}'
+# User Profile model
+class Profile(models.Model):
+    ROLE_CHOICES = [
+        ('student', 'Student'),
+        ('teacher', 'Teacher'),
+        ('admin', 'Administrator'),
+    ]
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    role = models.CharField(max_length=10, choices=ROLE_CHOICES)
+    id_proof = models.FileField(upload_to='id_proofs/')
+    is_verified = models.BooleanField(default=False)
 
+# Room model
 class Room(models.Model):
-    number = models.CharField(max_length=10, unique=True)
-    capacity = models.IntegerField()
-    is_teacher_room = models.BooleanField(default=False)
+    name = models.CharField(max_length=100)
+    description = models.TextField()
+    available = models.BooleanField(default=True)
 
-    def __str__(self):
-        return f"Room {self.number}"
-
+# Room request model
 class RoomRequest(models.Model):
+    DURATION_CHOICES = [
+        ('monthly', 'Monthly'),
+        ('quarterly', 'Quarterly'),
+        ('annually', 'Annually'),
+    ]
     STATUS_CHOICES = [
         ('pending', 'Pending'),
         ('approved', 'Approved'),
         ('rejected', 'Rejected'),
+        ('cancelled', 'Cancelled'),
     ]
-
-    student = models.ForeignKey('StudentProfile', on_delete=models.CASCADE, null=True, blank=True)
-    teacher = models.ForeignKey('TeacherProfile', on_delete=models.CASCADE, null=True, blank=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    room = models.ForeignKey(Room, on_delete=models.CASCADE)
+    duration = models.CharField(max_length=10, choices=DURATION_CHOICES)
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
-    room = models.ForeignKey('Room', on_delete=models.SET_NULL, null=True, blank=True)
-    requested_at = models.DateTimeField(auto_now_add=True)
-
-    def __str__(self):
-        return f"Request by {self.student or self.teacher} - {self.status}"
-
-    def save(self, *args, **kwargs):
-        # Get original status before saving
-        old_status = None
-        if self.pk:
-            old_instance = RoomRequest.objects.get(pk=self.pk)
-            old_status = old_instance.status
-
-        super().save(*args, **kwargs)
-
-        # If status changed to approved, update profile
-        if self.status == 'approved' and old_status != 'approved':
-            if self.student:
-                self.student.room = self.room
-                self.student.save()
-            elif self.teacher:
-                self.teacher.room = self.room
-                self.teacher.save()
-
-class StudentProfile(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
-    roll_number = models.CharField(max_length=20, unique=True)
-    room = models.ForeignKey('Room', on_delete=models.SET_NULL, null=True, blank=True)
-    profile_picture = models.ImageField(upload_to=user_profile_picture_path, null=True, blank=True)
-
-    def __str__(self):
-        return self.user.username
-
-class TeacherProfile(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
-    employee_id = models.CharField(max_length=20, unique=True)
-    room = models.ForeignKey('Room', on_delete=models.SET_NULL, null=True, blank=True)
-    profile_picture = models.ImageField(upload_to=user_profile_picture_path, null=True, blank=True)
-
-    def __str__(self):
-        return self.user.username
-
-# Need to check what is property method
-# @property
-# def requested_by_username(self):
-#     if self.student:
-#         return self.student.user.username
-#     elif self.teacher:
-#         return self.teacher.user.username
-#     return "Unknown"
+    created_at = models.DateTimeField(auto_now_add=True)

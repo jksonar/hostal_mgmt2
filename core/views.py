@@ -1,189 +1,122 @@
-from .forms import UserRegisterForm, RoomRequestForm
-from .models import StudentProfile, TeacherProfile, RoomRequest
-from django.shortcuts import render, redirect
-from django.contrib.auth.decorators import login_required
-from django.contrib.auth import authenticate, login, logout
-from django.contrib.auth.forms import AuthenticationForm
-from django.contrib import messages
 from django.shortcuts import render, redirect, get_object_or_404
-from .models import RoomRequest
-from django.contrib.auth.decorators import user_passes_test
+from django.contrib.auth import login, authenticate, logout
+from django.contrib.auth.decorators import login_required, user_passes_test
+from .forms import UserRegisterForm, RoomForm, RoomRequestForm
+from .models import Profile, Room, RoomRequest
+from django.contrib import messages
 
-# Create your views here.
-# from django.http import HttpResponse
+def is_admin(user):
+    return hasattr(user, 'profile') and user.profile.role == 'admin'
 
-def home(request):
-    return render(request,'base.html')
+def register_view(request):
+    if request.method == 'POST':
+        form = UserRegisterForm(request.POST, request.FILES)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Registration successful. Wait for admin verification.")
+            return redirect('login')
+    else:
+        form = UserRegisterForm()
+    return render(request, 'core/register.html', {'form': form})
+
+def login_view(request):
+    if request.method == 'POST':
+        username = request.POST['username']
+        password = request.POST['password']
+        user = authenticate(request, username=username, password=password)
+        if user is not None:
+            login(request, user)
+            return redirect('dashboard')
+        else:
+            messages.error(request, 'Invalid credentials')
+    return render(request, 'core/login.html')
+
+def logout_view(request):
+    logout(request)
+    return redirect('login')
 
 @login_required
-def request_room(request):
-    user = request.user
-    profile = None
-    is_student = False
-    is_teacher = False
+def dashboard(request):
+    profile = request.user.profile
+    if profile.role == 'admin':
+        return redirect('admin_dashboard')
+    return render(request, 'core/user_dashboard.html')
 
-    if hasattr(user, 'studentprofile'):
-        profile = user.studentprofile
-        is_student = True
-    elif hasattr(user, 'teacherprofile'):
-        profile = user.teacherprofile
-        is_teacher = True
-
+@login_required
+def room_request_view(request):
+    if not request.user.profile.is_verified:
+        return render(request, 'core/unverified.html')
+    if RoomRequest.objects.filter(user=request.user, status__in=['pending', 'approved']).exists():
+        messages.warning(request, "You already have an active room request.")
+        return redirect('dashboard')
     if request.method == 'POST':
         form = RoomRequestForm(request.POST)
         if form.is_valid():
             room_request = form.save(commit=False)
-            if is_student:
-                room_request.student = profile
-            elif is_teacher:
-                room_request.teacher = profile
+            room_request.user = request.user
             room_request.save()
-            return redirect('home')
+            messages.success(request, "Room request sent.")
+            return redirect('dashboard')
     else:
         form = RoomRequestForm()
-
-    return render(request, 'core/request_room.html', {'form': form})
-
-def user_login(request):
-    if request.method == 'POST':
-        form = AuthenticationForm(request, data=request.POST)
-        if form.is_valid():
-            user = form.get_user()
-            login(request, user)
-            # Check profile type and redirect
-            if hasattr(user, 'studentprofile'):
-                return redirect('student_dashboard')
-            elif hasattr(user, 'teacherprofile'):
-                return redirect('teacher_dashboard')
-            else:
-                return redirect('home')  # Fallback redirect
-    else:
-        form = AuthenticationForm()
-    return render(request, 'core/login.html', {'form': form})
+    return render(request, 'core/room_request.html', {'form': form})
 
 @login_required
-def student_dashboard(request):
-    profile = request.user.studentprofile
-    latest_request = RoomRequest.objects.filter(student=profile).order_by('-requested_at').first()
-    
-    allow_request = (
-        not latest_request or
-        latest_request.status == 'rejected'
-    )
-
-    if request.method == 'POST':
-        if allow_request:
-            form = RoomRequestForm(request.POST)
-            if form.is_valid():
-                room_request = form.save(commit=False)
-                room_request.student = profile
-                room_request.save()
-                return redirect('student_dashboard')
-        else:
-            form = RoomRequestForm()
-            form.add_error(None, "You can't submit another request right now.")
-    else:
-        form = RoomRequestForm()
-
-    return render(request, 'core/student_dashboard.html', {
-        'profile': profile,
-        'form': form,
-        'latest_request': latest_request,
-        'allow_request': allow_request
-    })
+def cancel_room_request(request, pk):
+    room_request = get_object_or_404(RoomRequest, pk=pk, user=request.user)
+    if room_request.status == 'pending':
+        room_request.status = 'cancelled'
+        room_request.save()
+        messages.success(request, "Room request cancelled.")
+    return redirect('dashboard')
 
 @login_required
-def teacher_dashboard(request):
-    profile = request.user.teacherprofile
-    latest_request = RoomRequest.objects.select_related('student').order_by('-requested_at').first()
-
-    allow_request = (
-        not latest_request or
-        latest_request.status == 'rejected'
-    )
-
-    if request.method == 'POST':
-        if allow_request:
-            form = RoomRequestForm(request.POST)
-            if form.is_valid():
-                room_request = form.save(commit=False)
-                room_request.teacher = profile
-                room_request.save()
-                return redirect('teacher_dashboard')
-        else:
-            form = RoomRequestForm()
-            form.add_error(None, "You can't submit another request right now.")
-    else:
-        form = RoomRequestForm()
-
-    return render(request, 'core/teacher_dashboard.html', {
-        'profile': profile,
-        'form': form,
-        'latest_request': latest_request,
-        'allow_request': allow_request
-    })
-
-def register(request):
-    if request.method == 'POST':
-        form = UserRegisterForm(request.POST)
-        if form.is_valid():
-            user = form.save()
-            is_student = form.cleaned_data.get('is_student')
-            is_teacher = form.cleaned_data.get('is_teacher')
-
-            if is_student:
-                StudentProfile.objects.create(user=user, roll_number=form.cleaned_data.get('roll_number'))
-            if is_teacher:
-                TeacherProfile.objects.create(user=user)
-
-            messages.success(request, 'Account created successfully.')
-            return redirect('login')  # 🔁 avoid resubmission on reload
-    else:
-        form = UserRegisterForm()
-    return render(request, 'core/register.html', {'form': form})
-
-def user_logout(request):
-    logout(request)
-    return redirect('login')
-
-def register(request):
-    if request.method == 'POST':
-        form = UserRegisterForm(request.POST)
-        if form.is_valid():
-            user = form.save()
-            StudentProfile.objects.create(
-                user=user,
-                roll_number=form.cleaned_data['roll_number']
-            )
-            # Proceed with login or redirect
-    else:
-        form = UserRegisterForm()
-    return render(request, 'core/register.html', {'form': form})
-
-def is_admin(user):
-    return user.is_staff
-
 @user_passes_test(is_admin)
 def admin_dashboard(request):
-    requests = RoomRequest.objects.select_related('student__user', 'teacher__user', 'room').order_by('-requested_at')
-    return render(request, 'admin/dashboard.html', {'requests': requests})
+    users = Profile.objects.exclude(role='admin')
+    rooms = Room.objects.all()
+    requests = RoomRequest.objects.all()
+    return render(request, 'core/admin_dashboard.html', {
+        'users': users,
+        'rooms': rooms,
+        'requests': requests
+    })
 
+@login_required
 @user_passes_test(is_admin)
-def approve_request(request, pk):
-    room_request = get_object_or_404(RoomRequest, pk=pk)
-    room_request.status = 'approved'
-    room_request.save()
+def verify_user(request, user_id):
+    profile = get_object_or_404(Profile, id=user_id)
+    profile.is_verified = True
+    profile.save()
     return redirect('admin_dashboard')
 
+@login_required
 @user_passes_test(is_admin)
-def reject_request(request, pk):
-    room_request = get_object_or_404(RoomRequest, pk=pk)
-    room_request.status = 'rejected'
-    room_request.save()
+def manage_room(request, room_id=None):
+    room = None
+    if room_id:
+        room = get_object_or_404(Room, id=room_id)
+    if request.method == 'POST':
+        form = RoomForm(request.POST, instance=room)
+        if form.is_valid():
+            form.save()
+            return redirect('admin_dashboard')
+    else:
+        form = RoomForm(instance=room)
+    return render(request, 'core/room_form.html', {'form': form})
+
+@login_required
+@user_passes_test(is_admin)
+def delete_room(request, room_id):
+    room = get_object_or_404(Room, id=room_id)
+    room.delete()
     return redirect('admin_dashboard')
 
+@login_required
 @user_passes_test(is_admin)
-def delete_request(request, pk):
-    room_request = get_object_or_404(RoomRequest, pk=pk)
-    room_request.delete()
+def update_request_status(request, request_id, status):
+    room_request = get_object_or_404(RoomRequest, id=request_id)
+    if status in ['approved', 'rejected', 'pending']:
+        room_request.status = status
+        room_request.save()
     return redirect('admin_dashboard')

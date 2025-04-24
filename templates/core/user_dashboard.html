@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}User Dashboard{% endblock %}
+{% block content %}
+<h2>Welcome, {{ user.username }}</h2>
+
+{% if user.profile.is_verified %}
+    <a href="{% url 'room_request' %}">Request Room</a><br><br>
+    <h4>Your Requests</h4>
+    <ul>
+        {% for request in user.roomrequest_set.all %}
+            <li>{{ request.room.name }} - {{ request.duration }} - {{ request.status }}
+                {% if request.status == 'pending' %}
+                    <a href="{% url 'cancel_request' request.id %}">Cancel</a>
+                {% endif %}
+            </li>
+        {% empty %}
+            <li>No requests found.</li>
+        {% endfor %}
+    </ul>
+{% else %}
+    <p>Your account is not verified yet. Please wait for admin approval.</p>
+{% endif %}
+{% endblock %}

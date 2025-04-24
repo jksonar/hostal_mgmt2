@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Admin Dashboard{% endblock %}
+{% block content %}
+<h2>Admin Dashboard</h2>
+
+<h3>Users</h3>
+<ul>
+    {% for profile in users %}
+        <li>{{ profile.user.username }} - {{ profile.role }} - Verified: {{ profile.is_verified }}
+            {% if not profile.is_verified %}
+                <a href="{% url 'verify_user' profile.id %}">Verify</a>
+            {% endif %}
+        </li>
+    {% endfor %}
+</ul>
+
+<h3>Rooms</h3>
+<a href="{% url 'add_room' %}">Add Room</a>
+<ul>
+    {% for room in rooms %}
+        <li>{{ room.name }} - Available: {{ room.available }}
+            <a href="{% url 'edit_room' room.id %}">Edit</a>
+            <a href="{% url 'delete_room' room.id %}">Delete</a>
+        </li>
+    {% endfor %}
+</ul>
+
+<h3>Room Requests</h3>
+<ul>
+    {% for req in requests %}
+        <li>{{ req.user.username }} - {{ req.room.name }} - {{ req.duration }} - {{ req.status }}
+            {% if req.status != 'cancelled' %}
+                <a href="{% url 'update_request_status' req.id 'approved' %}">Approve</a>
+                <a href="{% url 'update_request_status' req.id 'rejected' %}">Reject</a>
+                <a href="{% url 'update_request_status' req.id 'pending' %}">Pending</a>
+            {% endif %}
+        </li>
+    {% endfor %}
+</ul>
+{% endblock %}

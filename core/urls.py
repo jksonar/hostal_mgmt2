@@ -1,18 +1,17 @@
 from django.urls import path
 from . import views
-from django.conf import settings
-from django.conf.urls.static import static
 
 urlpatterns = [
-    path('', views.home, name='home'),
-    path('request-room/', views.request_room, name='request_room'),
-    path('login/', views.user_login, name='login'),
-    path('student/dashboard/', views.student_dashboard, name='student_dashboard'),
-    path('teacher/dashboard/', views.teacher_dashboard, name='teacher_dashboard'),
-    path('register/', views.register, name='register'),
-    path('logout/', views.user_logout, name='logout'),
-    path('site-admin/dashboard/', views.admin_dashboard, name='admin_dashboard'),
-    path('site-admin/room-request/<int:pk>/approve/', views.approve_request, name='approve_request'),
-    path('site-admin/room-request/<int:pk>/reject/', views.reject_request, name='reject_request'),
-    path('site-admin/room-request/<int:pk>/delete/', views.delete_request, name='delete_request'),
-] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    path('register/', views.register_view, name='register'),
+    path('login/', views.login_view, name='login'),
+    path('logout/', views.logout_view, name='logout'),
+    path('', views.dashboard, name='dashboard'),
+    path('room/request/', views.room_request_view, name='room_request'),
+    path('room/cancel/<int:pk>/', views.cancel_room_request, name='cancel_request'),
+    path('admin/dashboard/', views.admin_dashboard, name='admin_dashboard'),
+    path('admin/verify/<int:user_id>/', views.verify_user, name='verify_user'),
+    path('admin/room/add/', views.manage_room, name='add_room'),
+    path('admin/room/edit/<int:room_id>/', views.manage_room, name='edit_room'),
+    path('admin/room/delete/<int:room_id>/', views.delete_room, name='delete_room'),
+    path('admin/request/<int:request_id>/<str:status>/', views.update_request_status, name='update_request_status'),
+]
