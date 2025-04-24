@@ -8,6 +8,9 @@
         <a href="{% url 'dashboard' %}">Dashboard</a> |
         {% if user.is_authenticated %}
             <a href="{% url 'logout' %}">Logout</a>
+            {% if user.profile.is_verified %}
+                | <a href="{% url 'available_rooms' %}">View Available Rooms</a>
+            {% endif %}
         {% else %}
             <a href="{% url 'login' %}">Login</a>
             <a href="{% url 'register' %}">Register</a>

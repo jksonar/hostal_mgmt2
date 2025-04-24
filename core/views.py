@@ -1,3 +1,9 @@
+from django.db import IntegrityError
+from django.shortcuts import render, redirect
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth import login
+from .models import Profile
+from django.contrib import messages
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, authenticate, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
@@ -10,14 +16,38 @@ def is_admin(user):
 
 def register_view(request):
     if request.method == 'POST':
-        form = UserRegisterForm(request.POST, request.FILES)
+        form = UserCreationForm(request.POST)
+        role = request.POST.get('role')
+        id_proof = request.FILES.get('id_proof')
+
         if form.is_valid():
-            form.save()
-            messages.success(request, "Registration successful. Wait for admin verification.")
-            return redirect('login')
+            user = form.save()
+
+            try:
+                # Only create Profile if one doesn't exist
+                profile, created = Profile.objects.get_or_create(
+                    user=user,
+                    defaults={'role': role, 'id_proof': id_proof}
+                )
+                if not created:
+                    profile.role = role
+                    profile.id_proof = id_proof
+                    profile.save()
+
+            except IntegrityError:
+                messages.error(request, 'A profile for this user already exists.')
+                return redirect('register')  # or wherever appropriate
+
+            login(request, user)
+            messages.success(request, 'Account created successfully!')
+            return redirect('dashboard')
+        else:
+            messages.error(request, 'Please correct the errors below.')
     else:
-        form = UserRegisterForm()
+        form = UserCreationForm()
+
     return render(request, 'core/register.html', {'form': form})
+
 
 def login_view(request):
     if request.method == 'POST':
@@ -37,7 +67,12 @@ def logout_view(request):
 
 @login_required
 def dashboard(request):
-    profile = request.user.profile
+    try:
+        profile = request.user.profile
+    except Profile.DoesNotExist:
+        # Optional: auto-create for admin
+        profile = Profile.objects.create(user=request.user, role='admin', id_proof='id_proofs/default.pdf', is_verified=True)
+    
     if profile.role == 'admin':
         return redirect('admin_dashboard')
     return render(request, 'core/user_dashboard.html')
@@ -120,3 +155,19 @@ def update_request_status(request, request_id, status):
         room_request.status = status
         room_request.save()
     return redirect('admin_dashboard')
+
+@login_required
+def request_detail_view(request, request_id):
+    room_request = get_object_or_404(RoomRequest, id=request_id, user=request.user)
+    occupants = RoomRequest.objects.filter(room=room_request.room, status='approved').exclude(user=request.user)
+    return render(request, 'core/request_detail.html', {
+        'request': room_request,
+        'occupants': occupants
+    })
+
+@login_required
+def available_rooms(request):
+    if not request.user.profile.is_verified:
+        return render(request, 'core/unverified.html')
+    rooms = Room.objects.filter(available=True)
+    return render(request, 'core/available_rooms.html', {'rooms': rooms})

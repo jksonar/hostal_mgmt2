@@ -5,6 +5,15 @@
 <form method="post" enctype="multipart/form-data">
     {% csrf_token %}
     {{ form.as_p }}
+    <label for="role">Role:</label>
+    <select name="role" required>
+        <option value="student">Student</option>
+        <option value="teacher">Teacher</option>
+    </select>
+    <br>
+    <label for="id_proof">ID Proof:</label>
+    <input type="file" name="id_proof" required>
+    <br><br>
     <button type="submit">Register</button>
 </form>
 {% endblock %}

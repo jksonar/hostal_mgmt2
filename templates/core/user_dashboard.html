@@ -17,6 +17,13 @@
             <li>No requests found.</li>
         {% endfor %}
     </ul>
+    <ul>
+        {% for req in user_requests %}
+            <li>
+                <a href="{% url 'request_detail' req.id %}">{{ req.room.name }} - {{ req.duration }} - {{ req.status }}</a>
+            </li>
+        {% endfor %}
+    </ul>
 {% else %}
     <p>Your account is not verified yet. Please wait for admin approval.</p>
 {% endif %}
